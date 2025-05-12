@@ -4,7 +4,7 @@ session_start();
 $thread_id = intval($_GET['id'] ?? 0);
 $thread = $mysqli->query("SELECT t.*, f.name AS forum_name, u.username FROM threads t JOIN forums f ON t.forum_id=f.id JOIN users u ON t.user_id=u.id WHERE t.id=$thread_id")->fetch_assoc();
 if (!$thread) die('Discussie niet gevonden.');
-$posts = $mysqli->query("SELECT p.*, u.username, u.id as user_id FROM posts p JOIN users u ON p.user_id=u.id WHERE thread_id=$thread_id ORDER BY created_at ASC");
+$posts = $mysqli->query("SELECT p.*, u.username, u.id as user_id, u.bio, u.avatar FROM posts p JOIN users u ON p.user_id=u.id WHERE thread_id=$thread_id ORDER BY created_at ASC");
 // Reactie plaatsen
 $error = '';
 if (isset($_SESSION['user_id']) && $_SERVER['REQUEST_METHOD'] === 'POST' && !$thread['closed']) {
@@ -32,13 +32,15 @@ function isAdmin() {
     <title><?php echo htmlspecialchars($thread['title']); ?> - Discussie</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
-        .post { background: #f9f9fb; border-radius: 6px; margin-bottom: 18px; padding: 18px; box-shadow: 0 1px 3px #0001; }
+        .post { background: #f9f9fb; border-radius: 6px; margin-bottom: 18px; padding: 18px; box-shadow: 0 1px 3px #0001; display: flex; gap: 18px; align-items: flex-start; }
         .post .meta { color: #888; font-size: 0.95em; margin-bottom: 6px; }
         .post .content { font-size: 1.08em; }
         .post .actions { margin-top: 8px; }
         .post .actions a { color: #e76f51; margin-right: 10px; font-size: 0.97em; }
         .admin-actions { margin-bottom: 18px; }
         .admin-actions form { display:inline; }
+        .post-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; margin-right: 8px; }
+        .post-main { flex: 1; }
     </style>
 </head>
 <body>
@@ -68,15 +70,24 @@ function isAdmin() {
 <div class="container">
     <h2>Berichten</h2>
     <?php while($p = $posts->fetch_assoc()): ?>
+        <?php
+        $avatar_url = $p['avatar'] ? 'uploads/' . htmlspecialchars($p['avatar']) : 'https://www.gravatar.com/avatar/' . md5(strtolower(trim($p['email'] ?? ''))) . '?d=mp';
+        ?>
         <div class="post">
-            <div class="meta">Door <?php echo htmlspecialchars($p['username']); ?> op <?php echo date('d-m-Y H:i', strtotime($p['created_at'])); ?></div>
-            <div class="content"><?php echo nl2br(htmlspecialchars($p['content'])); ?></div>
-            <?php if ((isset($_SESSION['user_id']) && ($_SESSION['user_id'] == $p['user_id'] || isModOrAdmin()))): ?>
-            <div class="actions">
-                <a href="post_edit.php?id=<?php echo $p['id']; ?>&thread_id=<?php echo $thread_id; ?>">Bewerk</a>
-                <a href="post_delete.php?id=<?php echo $p['id']; ?>&thread_id=<?php echo $thread_id; ?>" onclick="return confirm('Weet je zeker dat je dit bericht wilt verwijderen?');">Verwijder</a>
+            <img class="post-avatar" src="<?php echo $avatar_url; ?>" alt="avatar">
+            <div class="post-main">
+                <div class="meta">Door <?php echo htmlspecialchars($p['username']); ?> op <?php echo date('d-m-Y H:i', strtotime($p['created_at'])); ?></div>
+                <div class="content"><?php echo nl2br(htmlspecialchars($p['content'])); ?></div>
+                <?php if ($p['bio']): ?>
+                    <div class="meta" style="color:#2a9d8f; font-size:0.97em; margin-top:8px;"><em><?php echo nl2br(htmlspecialchars($p['bio'])); ?></em></div>
+                <?php endif; ?>
+                <?php if ((isset($_SESSION['user_id']) && ($_SESSION['user_id'] == $p['user_id'] || isModOrAdmin()))): ?>
+                <div class="actions">
+                    <a href="post_edit.php?id=<?php echo $p['id']; ?>&thread_id=<?php echo $thread_id; ?>">Bewerk</a>
+                    <a href="post_delete.php?id=<?php echo $p['id']; ?>&thread_id=<?php echo $thread_id; ?>" onclick="return confirm('Weet je zeker dat je dit bericht wilt verwijderen?');">Verwijder</a>
+                </div>
+                <?php endif; ?>
             </div>
-            <?php endif; ?>
         </div>
     <?php endwhile; ?>
     <?php if ($thread['closed']): ?>
