@@ -39,6 +39,7 @@ $t = $langs[$lang];
 <div class="admin-topbar">
     <a href="admin_forums.php"><?php echo $t['forum_admin']; ?></a>
     <a href="admin_users.php"><?php echo $t['user_admin']; ?></a>
+    <a href="settings.php"><?php echo $t['settings']; ?></a>
     <a href="index.php">&larr; <?php echo $t['back']; ?></a>
 </div>
 <div class="admin-menu">

@@ -55,6 +55,11 @@ $langs = [
     'add' => 'Toevoegen',
     'save_changes' => 'Opslaan',
     'cancel' => 'Annuleren',
+    'settings' => 'Instellingen',
+    'forum_settings' => 'Forum Instellingen',
+    'logo_url' => 'Logo URL',
+    'footer_text' => 'Footer tekst',
+    'save_settings' => 'Instellingen opslaan',
   ],
   'en' => [
     'login' => 'Login',
@@ -111,5 +116,10 @@ $langs = [
     'add' => 'Add',
     'save_changes' => 'Save',
     'cancel' => 'Cancel',
+    'settings' => 'Settings',
+    'forum_settings' => 'Forum Settings',
+    'logo_url' => 'Logo URL',
+    'footer_text' => 'Footer text',
+    'save_settings' => 'Save settings',
   ]
 ]; 

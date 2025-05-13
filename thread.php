@@ -2,12 +2,33 @@
 require_once 'includes/db.php';
 session_start();
 $thread_id = intval($_GET['id'] ?? 0);
-$thread = $mysqli->query("SELECT t.*, f.name AS forum_name, u.username FROM threads t JOIN forums f ON t.forum_id=f.id JOIN users u ON t.user_id=u.id WHERE t.id=$thread_id")->fetch_assoc();
+$thread = $mysqli->query("SELECT t.*, f.name AS forum_name, f.post_permission, f.age_restriction, u.username FROM threads t JOIN forums f ON t.forum_id=f.id JOIN users u ON t.user_id=u.id WHERE t.id=$thread_id")->fetch_assoc();
 if (!$thread) die('Discussie niet gevonden.');
-$posts = $mysqli->query("SELECT p.*, u.username, u.id as user_id, u.bio, u.avatar FROM posts p JOIN users u ON p.user_id=u.id WHERE thread_id=$thread_id ORDER BY created_at ASC");
+
+// Check post permissions
+$can_post = false;
+if (isset($_SESSION['role'])) {
+    if ($thread['post_permission'] === 'all') {
+        $can_post = true;
+    } elseif ($thread['post_permission'] === 'moderators' && in_array($_SESSION['role'], ['moderator', 'admin'])) {
+        $can_post = true;
+    } elseif ($thread['post_permission'] === 'admins' && $_SESSION['role'] === 'admin') {
+        $can_post = true;
+    }
+}
+
+// Check age restriction
+if ($thread['age_restriction'] !== 'none') {
+    if (!isset($_SESSION['user_id'])) {
+        die('Je moet ingelogd zijn om in dit forum te posten.');
+    }
+    // TODO: Add age verification system
+}
+
+$posts = $mysqli->query("SELECT p.*, u.username, u.id as user_id, u.bio, u.email FROM posts p JOIN users u ON p.user_id=u.id WHERE thread_id=$thread_id ORDER BY created_at ASC");
 // Reactie plaatsen
 $error = '';
-if (isset($_SESSION['user_id']) && $_SERVER['REQUEST_METHOD'] === 'POST' && !$thread['closed']) {
+if (isset($_SESSION['user_id']) && $_SERVER['REQUEST_METHOD'] === 'POST' && !$thread['closed'] && $can_post) {
     $content = trim($_POST['content'] ?? '');
     if ($content) {
         $stmt = $mysqli->prepare('INSERT INTO posts (thread_id, user_id, content, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())');
@@ -71,7 +92,7 @@ function isAdmin() {
     <h2>Berichten</h2>
     <?php while($p = $posts->fetch_assoc()): ?>
         <?php
-        $avatar_url = $p['avatar'] ? 'uploads/' . htmlspecialchars($p['avatar']) : 'https://www.gravatar.com/avatar/' . md5(strtolower(trim($p['email'] ?? ''))) . '?d=mp';
+        $avatar_url = 'https://www.gravatar.com/avatar/' . md5(strtolower(trim($p['email'] ?? ''))) . '?d=mp';
         ?>
         <div class="post">
             <img class="post-avatar" src="<?php echo $avatar_url; ?>" alt="avatar">
@@ -92,8 +113,10 @@ function isAdmin() {
     <?php endwhile; ?>
     <?php if ($thread['closed']): ?>
         <div class="error">Deze discussie is gesloten.</div>
+    <?php elseif (!$can_post): ?>
+        <div class="error">Je hebt geen rechten om in dit forum te posten.</div>
     <?php endif; ?>
-    <?php if (isset($_SESSION['user_id']) && !$thread['closed']): ?>
+    <?php if (isset($_SESSION['user_id']) && !$thread['closed'] && $can_post): ?>
         <h3>Reageer</h3>
         <?php if ($error): ?><div class="error"><?php echo $error; ?></div><?php endif; ?>
         <form method="post">

@@ -2,7 +2,7 @@
 require_once 'includes/db.php';
 require_once 'includes/lang.php';
 session_start();
-$res = $mysqli->query("SELECT forum_name, forum_description, language FROM settings WHERE id=1");
+$res = $mysqli->query("SELECT forum_name, forum_description, language, logo_url, footer_text FROM settings WHERE id=1");
 $settings = $res->fetch_assoc();
 $lang = $settings['language'] ?? 'nl';
 $t = $langs[$lang];
@@ -19,6 +19,11 @@ $forums = $mysqli->query("SELECT * FROM forums");
         .topbar .nav { display: flex; gap: 18px; margin-right: 32px; }
         .topbar .nav a { color: #e76f51; text-decoration: none; font-weight: 500; }
         .topbar .nav a:hover { text-decoration: underline; }
+        .forum-logo { max-height: 60px; margin: 0 auto; display: block; }
+        .header { text-align: center; margin: 20px 0; }
+        .header h1 { margin: 0; color: #e76f51; }
+        .header p { margin: 10px 0 0; color: #666; }
+        .footer { margin-top: 40px; padding: 20px 0; border-top: 1px solid #ececec; color: #666; text-align: center; }
     </style>
 </head>
 <body>
@@ -37,8 +42,12 @@ $forums = $mysqli->query("SELECT * FROM forums");
     </div>
 </div>
 <div class="header">
-    <h1><?php echo htmlspecialchars($settings['forum_name']); ?></h1>
-    <p><?php echo htmlspecialchars($settings['forum_description']); ?></p>
+    <?php if (!empty($settings['logo_url'])): ?>
+        <img src="<?php echo htmlspecialchars($settings['logo_url']); ?>" alt="Forum logo" class="forum-logo">
+    <?php else: ?>
+        <h1><?php echo htmlspecialchars($settings['forum_name']); ?></h1>
+        <p><?php echo htmlspecialchars($settings['forum_description']); ?></p>
+    <?php endif; ?>
 </div>
 <div class="container">
     <h2><?php echo $t['forums']; ?></h2>
@@ -51,5 +60,10 @@ $forums = $mysqli->query("SELECT * FROM forums");
         <?php endwhile; ?>
     </ul>
 </div>
+<?php if (!empty($settings['footer_text'])): ?>
+<div class="footer">
+    <?php echo nl2br(htmlspecialchars($settings['footer_text'])); ?>
+</div>
+<?php endif; ?>
 </body>
 </html> 
