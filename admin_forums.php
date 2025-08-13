@@ -1,6 +1,11 @@
 <?php
 session_start();
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') die('Geen toegang.');
+if (!isset($_SESSION['user_id'])) {
+    die('Je moet ingelogd zijn om toegang te krijgen tot het admin gedeelte. <a href="login.php">Inloggen</a>');
+}
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    die('Je hebt geen admin rechten. Je rol is: ' . ($_SESSION['role'] ?? 'niet ingesteld') . '. <a href="index.php">Terug naar forum</a>');
+}
 require 'includes/db.php';
 // Forum toevoegen
 $error = '';
